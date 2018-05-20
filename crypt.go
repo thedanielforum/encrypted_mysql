@@ -12,9 +12,8 @@ import (
 )
 
 var secret = os.Getenv("ENCRYPTED_MYSQL_SECRET")
-var block cipher.Block
 
-func init() {
+func getCipherBlock() cipher.Block {
 	// When decoded the key should be 16 bytes (AES-128) or 32 (AES-256).
 	key, err := hex.DecodeString(secret)
 	if err != nil {
@@ -26,10 +25,12 @@ func init() {
 		log.Printf("ERROR: 'ENCRYPTED_MYSQL_SECRET' needs to be 32 bytes long")
 	}
 
-	block, err = aes.NewCipher(key)
+	block, err := aes.NewCipher(key)
 	if err != nil {
 		log.Printf("ERROR: while running NewCipher on key provided: %s", err.Error())
 	}
+
+	return block
 }
 
 // Encrypt aes encrypts string
@@ -50,7 +51,7 @@ func Encrypt(unsafe string) string {
 		return ""
 	}
 
-	stream := cipher.NewCFBEncrypter(block, iv)
+	stream := cipher.NewCFBEncrypter(getCipherBlock(), iv)
 	stream.XORKeyStream(ciphertext[aes.BlockSize:], plaintext)
 
 	return fmt.Sprintf("%x", ciphertext)
@@ -73,7 +74,7 @@ func Decrypt(safe string) string {
 	iv := ciphertext[:aes.BlockSize]
 	ciphertext = ciphertext[aes.BlockSize:]
 
-	stream := cipher.NewCFBDecrypter(block, iv)
+	stream := cipher.NewCFBDecrypter(getCipherBlock(), iv)
 
 	// XORKeyStream can work in-place if the two arguments are the same.
 	stream.XORKeyStream(ciphertext, ciphertext)
