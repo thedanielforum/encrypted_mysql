@@ -3,6 +3,9 @@ Encrypted type for mysql golang
 
 You will need to set the secret with a env variable `ENCRYPTED_MYSQL_SECRET`.
 This secret needs to be 32 bytes long, this will encrypt you data with AES 256.
+```
+export ENCRYPTED_MYSQL_SECRET=6368616e6765207468697320706173736368616e676520746869732070617373
+```
 
 Just use the encrypted type and it will encrypt and decrypt the data on read/write.
 ```go
