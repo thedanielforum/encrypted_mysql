@@ -5,7 +5,7 @@ import (
 	"errors"
 )
 
-// Encrypted will be encrypted before data is inserted
+// Encrypted type will be encrypted before data is inserted
 type Encrypted string
 
 // Value - Implementation of valuer for database/sql

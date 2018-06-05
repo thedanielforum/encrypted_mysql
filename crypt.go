@@ -5,27 +5,49 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"log"
-	"os"
 )
 
-var secret = os.Getenv("ENCRYPTED_MYSQL_SECRET")
+var c *Crypt
 
-func getCipherBlock() cipher.Block {
+func init() {
+	c = new(Crypt)
+}
+
+// Crypt contains the AES secret and config for crypto.
+type Crypt struct {
+	secret string
+	key    []byte
+}
+
+func CryptInit(secret string) error {
 	// When decoded the key should be 16 bytes (AES-128) or 32 (AES-256).
 	key, err := hex.DecodeString(secret)
 	if err != nil {
 		log.Printf("ERROR: while hex decoding secret provided: %s", err.Error())
+		return err
 	}
 
 	// Check key length
 	if len(key) != 32 {
-		log.Printf("ERROR: 'ENCRYPTED_MYSQL_SECRET' needs to be 32 bytes long")
+		err = errors.New("ERROR: 'ENCRYPTED_MYSQL_SECRET' needs to be 32 bytes long")
+		log.Printf(err.Error())
+		return err
 	}
 
-	block, err := aes.NewCipher(key)
+	c = &Crypt{
+		key:    key,
+		secret: secret,
+	}
+
+	return nil
+}
+
+func getCipherBlock() cipher.Block {
+	block, err := aes.NewCipher(c.key)
 	if err != nil {
 		log.Printf("ERROR: while running NewCipher on key provided: %s", err.Error())
 	}
@@ -37,7 +59,7 @@ func getCipherBlock() cipher.Block {
 func Encrypt(unsafe string) string {
 	plaintext := []byte(unsafe)
 
-	if secret == "" {
+	if c.secret == "" {
 		log.Printf("ERROR: 'ENCRYPTED_MYSQL_SECRET' is required")
 		return ""
 	}
